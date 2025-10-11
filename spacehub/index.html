@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Space Hub</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.js"></script>
+  <meta name="theme-color" content="#000000">
+
+  <link rel="icon" href="assets/icons/spacehub.jpg" type="image/jpeg">
+  <link rel="manifest" href="assets/icons/site.webmanifest">
+
+  <style>
+    .input { padding:8px 10px; border-radius:10px; background:#111; color:#eee; border:1px solid #2a2a2a }
+    .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center }
+    .badge { font-size:12px; opacity:.7 }
+    .container.controls { gap:8px; margin-top:8px }
+    .tooltip-neo { position:fixed; background:#0b0b0bcc; color:#eee; border:1px solid #333; border-radius:8px; padding:8px 10px; pointer-events:none; display:none; z-index:99; max-width:360px }
+
+    .modal-backdrop{position:fixed;inset:0;background:#000000aa;display:none;align-items:center;justify-content:center;z-index:2000;}
+    .modal{background:#0f1115;border:1px solid #23252b;border-radius:14px;max-width:980px;width:96%;color:#eaecef;box-shadow:0 10px 40px #000a;}
+    .modal header{padding:14px 18px;border-bottom:1px solid #23252b;font-weight:700;display:flex;align-items:center;justify-content:space-between}
+    .modal .body{padding:16px 18px;display:grid;gap:14px}
+    .kv{display:grid;grid-template-columns:160px 1fr;gap:8px}
+    .btn{cursor:pointer;padding:8px 12px;border-radius:10px;border:1px solid #334155;background:#1e293b;color:#e9e9e9}
+
+    .impact-panel input { width: 100%; padding: 8px 10px; border-radius: 8px; background:#111; color:#eee; border:1px solid #2a2a2a }
+    .impact-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .impact-btn { cursor: pointer; padding: 8px 12px; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: #e9e9e9 }
+    .impact-note { font-size: 12px; opacity: .85 }
+  </style>
+</head>
+<body>
+  <canvas id="orreryCanvas"></canvas>
+
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+
+  <div id="activeShowersOverlay" class="active-showers-panel hidden">
+    <span id="activeShowersText">No active showers</span>
+  </div>
+
+  <div class="info-panel">
+    <h1 id="info-name"></h1>
+    <p id="info-type"></p>
+    <p id="info-class"></p>
+    <p id="info-code"></p>
+    <p id="info-diameter"></p>
+    <p id="info-first-impact"></p>
+    <p id="info-impact-period"></p>
+    <p id="info-risk"></p>
+    <p id="info-vel"></p>
+    <p id="info-temp"></p>
+    <p id="info-grav"></p>
+    <p id="info-mass"></p>
+    <p id="info-obl"></p>
+    <p id="info-rotper"></p>
+    <h2>Orbital parameters:</h2>
+    <p id="info-a" style="padding-left: 20px;"></p>
+    <p id="info-e" style="padding-left: 20px;"></p>
+    <p id="info-inc" style="padding-left: 20px;"></p>
+    <p id="info-node" style="padding-left: 20px;"></p>
+    <p id="info-peri" style="padding-left: 20px;"></p>
+    <p id="info-ma" style="padding-left: 20px;"></p>
+    <p id="info-epoch" style="padding-left: 20px;"></p>
+  </div>
+
+  <!-- Dates + Load button -->
+  <div class="container controls">
+    <div class="row">
+      <input id="fromDate" type="date" class="input">
+      <input id="toDate"   type="date" class="input">
+      <button id="loadNeo" class="open-btn">Load NEOs</button>
+    </div>
+  </div>
+
+  <!-- Time / timeline controls -->
+  <div class="container">
+    <div class="time-container">
+      <div class="time-item" id="current-time" style="font-size: large;"></div>
+      <div class="time-item" id="timespeed" style="font-size: large;"></div>
+    </div>
+    <div class="time-control-panel">
+      <button class="time-control-button" id="fastbackward-button"><img src="assets/icon-time-fastbackward.png" alt="" width="198" height="128" class="time-control-icon"></button>
+      <button class="time-control-button" id="backward-button"><img src="assets/icon-time-backward.png" alt="" width="128" height="128" class="time-control-icon"></button>
+      <button class="time-control-button" id="now-button"><img src="assets/icon-time-now.png" alt="" width="128" height="128" class="time-control-icon"></button>
+      <button class="time-control-button" id="forward-button"><img src="assets/icon-time-forward.png" alt="" width="128" height="128" class="time-control-icon"></button>
+      <button class="time-control-button" id="fastforward-button"><img src="assets/icon-time-fastforward.png" alt="" width="198" height="128" class="time-control-icon"></button>
+    </div>
+  </div>
+  <div id="neoTooltip" class="tooltip-neo"></div>
+  <div id="neoModal" class="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="neoModalTitle" style="max-width:680px;width:92%;">
+      <header><span id="neoModalTitle">Asteroid</span><button id="neoModalClose" class="btn">Close</button></header>
+      <div class="body" id="neoModalBody"></div>
+      <div style="padding:14px 18px;border-top:1px solid #23252b;display:flex;gap:10px;justify-content:flex-end">
+        <a id="neoModalJPL" class="btn" target="_blank" rel="noopener">Open JPL SBDB</a>
+      </div>
+    </div>
+  </div>
+
+  <button id="openImpact" class="impact-btn" style="position:fixed; right:16px; bottom:16px; z-index:1200;">Impact simulator</button>
+
+  <div id="impactModalBackdrop" class="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="impactModalTitle">
+      <header>
+        <span id="impactModalTitle">Impact simulation</span>
+        <button id="closeImpact" class="btn">Close</button>
+      </header>
+      <div class="body">
+        <div class="impact-row">
+          <div>
+            <div class="impact-note">Diameter (m)</div>
+            <input id="impDiam" type="number" value="120">
+          </div>
+          <div>
+            <div class="impact-note">Velocity (km/s)</div>
+            <input id="impSpeed" type="number" value="17">
+          </div>
+        </div>
+        <div class="impact-row">
+          <div>
+            <div class="impact-note">Density (kg/m³)</div>
+            <input id="impRho" type="number" value="3000">
+          </div>
+          <div>
+            <div class="impact-note">Entry angle (°)</div>
+            <input id="impAngle" type="number" value="45">
+          </div>
+        </div>
+        <div style="border-top:1px solid #23252b; padding-top:10px; margin-top:4px">
+          <div style="font-weight:700; margin-bottom:6px">Gravity tractor</div>
+          <div class="impact-row">
+            <div>
+              <div class="impact-note">Spacecraft mass mₜ (kg)</div>
+              <input id="gtMt" type="number" value="2000">
+            </div>
+            <div>
+              <div class="impact-note">Hover distance rₕ = Rₐ + h (km)</div>
+              <input id="gtRh" type="number" value="1.0">
+            </div>
+          </div>
+          <div class="impact-row">
+            <div>
+              <div class="impact-note">Campaign time τ (years)</div>
+              <input id="gtTau" type="number" value="1.0" step="0.1">
+            </div>
+            <div>
+              <div class="impact-note">Tug angle α (deg)</div>
+              <input id="gtAlpha" type="number" value="0">
+            </div>
+          </div>
+          <div class="impact-row">
+            <div>
+              <div class="impact-note">Orbit a (AU)</div>
+              <input id="gtAau" type="number" value="1.1" step="0.01">
+            </div>
+            <div>
+              <div class="impact-note">κ (b-plane coupling)</div>
+              <input id="gtKappa" type="number" value="0.8" step="0.1">
+            </div>
+          </div>
+          <div class="impact-row">
+            <div>
+              <div class="impact-note">B-plane σ (km) for MC</div>
+              <input id="bpSigma" type="number" value="1500">
+            </div>
+            <div></div>
+          </div>
+          <div id="gtResult" class="impact-note"></div>
+        </div>
+        <div>
+          <div class="impact-note">Impact point (click map)</div>
+          <input id="impLatLon" type="text" value="0, 0" readonly>
+        </div>
+        <div class="impact-row">
+          <button id="runImpact" class="impact-btn">Run simulation</button>
+          <button id="clearImpact" class="impact-btn">Clear</button>
+        </div>
+        <div id="impactEnv" class="impact-note"></div>
+        <div id="impactResult" class="impact-note"></div>
+        <div id="impactMap" style="height:48vh; border-radius:12px; overflow:hidden; border:1px solid #232323;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="TimeUtils.js"></script>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
