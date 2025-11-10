@@ -66,7 +66,6 @@
     <p id="info-epoch" style="padding-left: 20px;"></p>
   </div>
 
-  <!-- Dates + Load button -->
   <div class="container controls">
     <div class="row">
       <input id="fromDate" type="date" class="input">
@@ -75,7 +74,6 @@
     </div>
   </div>
 
-  <!-- Time / timeline controls -->
   <div class="container">
     <div class="time-container">
       <div class="time-item" id="current-time" style="font-size: large;"></div>
@@ -175,10 +173,8 @@
           <input id="impLatLon" type="text" value="0, 0" readonly>
         </div>
         <div class="impact-row">
-          <!-- <button id="runImpact" class="impact-btn">Run simulation</button> -->
           <button id="clearImpact" class="impact-btn">Clear</button>
           <button id="simulateWithAI" class="impact-btn" style="background: #10b981;">Analyze with Gemini AI</button>
-
         </div>
         <div id="impactEnv" class="impact-note"></div>
         <div id="impactResult" class="impact-note"></div>
@@ -187,7 +183,6 @@
     </div>
   </div>
 
-  <!-- Gemini modal (shows LLM explanation) -->
   <div id="geminiModalBackdrop" class="modal-backdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="geminiModalTitle" style="max-width:780px;width:92%;">
       <header><span id="geminiModalTitle">Clarify formulas</span><button id="geminiModalClose" class="btn">Close</button></header>
@@ -195,11 +190,6 @@
     </div>
   </div>
 
-<script>
-  window.GENAI_API_KEY = 'AIzaSyDHWKDN-4xzvlzZOUn1sV8GHuqTh0vPQZE';
-  window.GENAI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
-</script>
 <script type="module" src="main.js"></script>
-  <script type="module" src="main.js"></script>
 </body>
 </html>
